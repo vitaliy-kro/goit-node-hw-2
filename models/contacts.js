@@ -5,8 +5,8 @@ const contactsPath = path.resolve(__dirname, './contacts.json');
 
 const getContacts = async () => {
   const read = await fs.readFile(contactsPath);
-  const normalizedContacts = JSON.parse(read);
-  return normalizedContacts;
+
+  return JSON.parse(read);
 };
 
 const getContactById = async contactId => {
@@ -27,12 +27,12 @@ const removeContact = async contactId => {
   const contactIndex = contacts.findIndex(({ id }) => id === contactId);
 
   if (contactIndex < 0) {
-    return 'Not found';
+    return;
   }
   contacts.splice(contactIndex, 1);
   fs.writeFile(contactsPath, JSON.stringify(contacts));
 
-  return 'Contact deleted';
+  return true;
 };
 
 const updateContact = async (contactId, body) => {

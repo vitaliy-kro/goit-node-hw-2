@@ -23,7 +23,10 @@ router.get('/:contactId', async (req, res, next) => {
   const { contactId } = req.params;
   const contact = await getContactById(contactId);
 
-  contact ? res.json(contact) : res.status(404).json({ message: 'Not found' });
+  if (!contact) {
+    res.status(404).json({ message: 'Not found' });
+  }
+  res.json(contact);
 });
 
 router.post('/', async (req, res, next) => {
@@ -38,7 +41,7 @@ router.post('/', async (req, res, next) => {
   const id = nanoid();
   const newContact = { id, name, email, phone };
 
-  addContact(newContact);
+  await addContact(newContact);
   res.status(201).json(newContact);
 });
 
@@ -47,9 +50,11 @@ router.delete('/:contactId', async (req, res, next) => {
 
   const result = await removeContact(contactId);
 
-  result === 'Not found'
-    ? res.status(404).json({ message: result })
-    : res.json({ message: result });
+  if (!result) {
+    return res.status(404).json({ message: 'Not found' });
+  }
+
+  res.json({ message: 'Contact deleted' });
 });
 
 router.put('/:contactId', async (req, res, next) => {
