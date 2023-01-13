@@ -1,16 +1,17 @@
 const express = require('express');
-const { nanoid } = require('nanoid');
 const {
   getContacts,
   getContactById,
   addContact,
   removeContact,
   updateContact,
+  updateStatusContact,
 } = require('../../models/contacts');
 const {
   addContactSchema,
   updadeContactSchema,
-} = require('./contactsValidationSchemas');
+  changeFavoriteSchema,
+} = require('../../schemas/contactsJoiSchemas');
 
 const router = express.Router();
 
@@ -24,24 +25,21 @@ router.get('/:contactId', async (req, res, next) => {
   const contact = await getContactById(contactId);
 
   if (!contact) {
-    res.status(404).json({ message: 'Not found' });
+    return res
+      .status(404)
+      .json({ message: `Contact with id:'${contactId}' not found` });
   }
   res.json(contact);
 });
 
 router.post('/', async (req, res, next) => {
-  const { name, email, phone } = req.body;
-
   const { error } = addContactSchema.validate(req.body);
 
   if (error?.message) {
     return res.status(400).json({ message: error.message });
   }
 
-  const id = nanoid();
-  const newContact = { id, name, email, phone };
-
-  await addContact(newContact);
+  const newContact = await addContact(req.body);
   res.status(201).json(newContact);
 });
 
@@ -66,7 +64,30 @@ router.put('/:contactId', async (req, res, next) => {
     return res.status(400).json({ message: error.message });
   }
   const result = await updateContact(params.contactId, body);
+  if (!result) {
+    return res
+      .status(404)
+      .json({ message: `Not found contact with id:'${params.contactId}' ` });
+  }
+
   res.json(result);
+});
+
+router.patch('/:contactId/favorite', async (req, res, next) => {
+  const { body, params } = req;
+  const { error } = changeFavoriteSchema.validate(body);
+  if (error?.message) {
+    return res.status(400).json({ message: error.message });
+  }
+  const result = await updateStatusContact(params.contactId, body);
+
+  if (!result) {
+    return res
+      .status(404)
+      .json({ message: `Not found contact with id: ${params.contactId}` });
+  }
+
+  res.status(200).json(result);
 });
 
 module.exports = router;
