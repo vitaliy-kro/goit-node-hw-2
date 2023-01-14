@@ -12,6 +12,7 @@ const {
   updadeContactSchema,
   changeFavoriteSchema,
 } = require('../../schemas/contactsJoiSchemas');
+const { HttpError } = require('../../helpers/HttpError');
 
 const router = express.Router();
 
@@ -22,14 +23,18 @@ router.get('/', async (req, res, next) => {
 
 router.get('/:contactId', async (req, res, next) => {
   const { contactId } = req.params;
-  const contact = await getContactById(contactId);
+  try {
+    const contact = await getContactById(contactId);
+    console.log('contact', contact);
+    res.json(contact);
+  } catch (error) {
+    const httpError = new HttpError(
+      404,
+      `Contact with id:'${contactId}' not found`
+    );
 
-  if (!contact) {
-    return res
-      .status(404)
-      .json({ message: `Contact with id:'${contactId}' not found` });
+    next(httpError);
   }
-  res.json(contact);
 });
 
 router.post('/', async (req, res, next) => {
@@ -38,7 +43,6 @@ router.post('/', async (req, res, next) => {
   if (error?.message) {
     return res.status(400).json({ message: error.message });
   }
-
   const newContact = await addContact(req.body);
   res.status(201).json(newContact);
 });
@@ -46,13 +50,16 @@ router.post('/', async (req, res, next) => {
 router.delete('/:contactId', async (req, res, next) => {
   const { contactId } = req.params;
 
-  const result = await removeContact(contactId);
-
-  if (!result) {
-    return res.status(404).json({ message: 'Not found' });
+  try {
+    await removeContact(contactId);
+    res.json({ message: 'Contact deleted' });
+  } catch (error) {
+    const httpError = new HttpError(
+      404,
+      `Contact with id:'${contactId}' not found`
+    );
+    next(httpError);
   }
-
-  res.json({ message: 'Contact deleted' });
 });
 
 router.put('/:contactId', async (req, res, next) => {
@@ -63,14 +70,17 @@ router.put('/:contactId', async (req, res, next) => {
   if (error?.message) {
     return res.status(400).json({ message: error.message });
   }
-  const result = await updateContact(params.contactId, body);
-  if (!result) {
-    return res
-      .status(404)
-      .json({ message: `Not found contact with id:'${params.contactId}' ` });
-  }
+  try {
+    const result = await updateContact(params.contactId, body);
+    res.json(result);
+  } catch (error) {
+    const httpError = new HttpError(
+      404,
+      `Contact with id:'${params.contactId}' not found`
+    );
 
-  res.json(result);
+    next(httpError);
+  }
 });
 
 router.patch('/:contactId/favorite', async (req, res, next) => {
@@ -79,15 +89,17 @@ router.patch('/:contactId/favorite', async (req, res, next) => {
   if (error?.message) {
     return res.status(400).json({ message: error.message });
   }
-  const result = await updateStatusContact(params.contactId, body);
+  try {
+    const result = await updateStatusContact(params.contactId, body);
+    res.status(200).json(result);
+  } catch (error) {
+    const httpError = new HttpError(
+      404,
+      `Contact with id:'${params.contactId}' not found`
+    );
 
-  if (!result) {
-    return res
-      .status(404)
-      .json({ message: `Not found contact with id: ${params.contactId}` });
+    next(httpError);
   }
-
-  res.status(200).json(result);
 });
 
 module.exports = router;
