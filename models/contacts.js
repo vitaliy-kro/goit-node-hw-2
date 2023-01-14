@@ -1,52 +1,41 @@
-const fs = require('fs/promises');
-const path = require('path');
-
-const contactsPath = path.resolve(__dirname, './contacts.json');
+const { Contact } = require('../schemas/contactsMongooseSchemas');
 
 const getContacts = async () => {
-  const read = await fs.readFile(contactsPath);
-
-  return JSON.parse(read);
+  const contacts = await Contact.find({});
+  return contacts;
 };
 
 const getContactById = async contactId => {
-  const contacts = await getContacts();
-  return contacts.find(({ id }) => id === contactId);
+  const contact = await Contact.findById(contactId);
+  return contact;
 };
 
 const addContact = async body => {
-  const contacts = await getContacts();
-
-  contacts.push(body);
-
-  fs.writeFile(contactsPath, JSON.stringify(contacts));
+  const newContact = await Contact.create(body);
+  return newContact;
 };
 
 const removeContact = async contactId => {
-  const contacts = await getContacts();
-  const contactIndex = contacts.findIndex(({ id }) => id === contactId);
-
-  if (contactIndex < 0) {
-    return;
-  }
-  contacts.splice(contactIndex, 1);
-  fs.writeFile(contactsPath, JSON.stringify(contacts));
-
-  return true;
+  const result = await Contact.findByIdAndRemove(contactId);
+  return result;
 };
 
 const updateContact = async (contactId, body) => {
-  const contacts = await getContacts();
-  const contactIndex = contacts.findIndex(({ id }) => id === contactId);
-  if (!contactIndex < 0) {
-    return;
-  }
-  const contactToChange = contacts[contactIndex];
-  Object.keys(body).forEach(key => (contactToChange[key] = body[key]));
+  const result = await Contact.findByIdAndUpdate(
+    contactId,
+    { $set: body },
+    { new: true }
+  );
+  return result;
+};
 
-  fs.writeFile(contactsPath, JSON.stringify(contacts));
-
-  return contactToChange;
+const updateStatusContact = async (contactId, body) => {
+  const result = await Contact.findByIdAndUpdate(
+    contactId,
+    { $set: body },
+    { new: true }
+  );
+  return result;
 };
 
 module.exports = {
@@ -55,4 +44,5 @@ module.exports = {
   removeContact,
   addContact,
   updateContact,
+  updateStatusContact,
 };

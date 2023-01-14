@@ -1,16 +1,18 @@
 const express = require('express');
-const { nanoid } = require('nanoid');
 const {
   getContacts,
   getContactById,
   addContact,
   removeContact,
   updateContact,
+  updateStatusContact,
 } = require('../../models/contacts');
 const {
   addContactSchema,
   updadeContactSchema,
-} = require('./contactsValidationSchemas');
+  changeFavoriteSchema,
+} = require('../../schemas/contactsJoiSchemas');
+const { HttpError } = require('../../helpers/HttpError');
 
 const router = express.Router();
 
@@ -21,40 +23,43 @@ router.get('/', async (req, res, next) => {
 
 router.get('/:contactId', async (req, res, next) => {
   const { contactId } = req.params;
-  const contact = await getContactById(contactId);
+  try {
+    const contact = await getContactById(contactId);
+    console.log('contact', contact);
+    res.json(contact);
+  } catch (error) {
+    const httpError = new HttpError(
+      404,
+      `Contact with id:'${contactId}' not found`
+    );
 
-  if (!contact) {
-    res.status(404).json({ message: 'Not found' });
+    next(httpError);
   }
-  res.json(contact);
 });
 
 router.post('/', async (req, res, next) => {
-  const { name, email, phone } = req.body;
-
   const { error } = addContactSchema.validate(req.body);
 
   if (error?.message) {
     return res.status(400).json({ message: error.message });
   }
-
-  const id = nanoid();
-  const newContact = { id, name, email, phone };
-
-  await addContact(newContact);
+  const newContact = await addContact(req.body);
   res.status(201).json(newContact);
 });
 
 router.delete('/:contactId', async (req, res, next) => {
   const { contactId } = req.params;
 
-  const result = await removeContact(contactId);
-
-  if (!result) {
-    return res.status(404).json({ message: 'Not found' });
+  try {
+    await removeContact(contactId);
+    res.json({ message: 'Contact deleted' });
+  } catch (error) {
+    const httpError = new HttpError(
+      404,
+      `Contact with id:'${contactId}' not found`
+    );
+    next(httpError);
   }
-
-  res.json({ message: 'Contact deleted' });
 });
 
 router.put('/:contactId', async (req, res, next) => {
@@ -65,8 +70,36 @@ router.put('/:contactId', async (req, res, next) => {
   if (error?.message) {
     return res.status(400).json({ message: error.message });
   }
-  const result = await updateContact(params.contactId, body);
-  res.json(result);
+  try {
+    const result = await updateContact(params.contactId, body);
+    res.json(result);
+  } catch (error) {
+    const httpError = new HttpError(
+      404,
+      `Contact with id:'${params.contactId}' not found`
+    );
+
+    next(httpError);
+  }
+});
+
+router.patch('/:contactId/favorite', async (req, res, next) => {
+  const { body, params } = req;
+  const { error } = changeFavoriteSchema.validate(body);
+  if (error?.message) {
+    return res.status(400).json({ message: error.message });
+  }
+  try {
+    const result = await updateStatusContact(params.contactId, body);
+    res.status(200).json(result);
+  } catch (error) {
+    const httpError = new HttpError(
+      404,
+      `Contact with id:'${params.contactId}' not found`
+    );
+
+    next(httpError);
+  }
 });
 
 module.exports = router;
