@@ -1,26 +1,41 @@
-const { Contact } = require('../schemas/contactsMongooseSchemas');
+const { Contact } = require('../schemas/contacts/contactsMongooseSchemas');
 
-const getContacts = async () => {
-  const contacts = await Contact.find({});
-  return contacts;
+const getContacts = async (id, limit, skip, favorite) => {
+  const userContacts = await Contact.find({ owner: id, favorite }, { owner: 0 })
+    .skip(skip)
+    .limit(limit);
+  console.log('userContacts', userContacts);
+  return userContacts;
 };
 
-const getContactById = async contactId => {
-  const contact = await Contact.findById(contactId);
-  return contact;
-};
+const getContactById = async (contactId, ownerId) => {
+  const contact = await Contact.find(
+    { _id: contactId, owner: ownerId },
+    { owner: 0 }
+  );
 
-const addContact = async body => {
-  const newContact = await Contact.create(body);
+  return contact[0];
+};
+const addContact = async (body, owner) => {
+  const newContact = await Contact.create({ ...body, owner });
   return newContact;
 };
 
-const removeContact = async contactId => {
+const removeContact = async (contactId, owner) => {
+  const getContact = getContactById(contactId, owner);
+  if (!getContact) {
+    return getContact;
+  }
   const result = await Contact.findByIdAndRemove(contactId);
   return result;
 };
 
-const updateContact = async (contactId, body) => {
+const updateContact = async (contactId, body, owner) => {
+  const getContact = getContactById(contactId, owner);
+  if (!getContact) {
+    return getContact;
+  }
+
   const result = await Contact.findByIdAndUpdate(
     contactId,
     { $set: body },
@@ -30,6 +45,10 @@ const updateContact = async (contactId, body) => {
 };
 
 const updateStatusContact = async (contactId, body) => {
+  const getContact = getContactById(contactId);
+  if (!getContact) {
+    return getContact;
+  }
   const result = await Contact.findByIdAndUpdate(
     contactId,
     { $set: body },

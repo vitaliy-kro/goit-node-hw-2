@@ -1,4 +1,5 @@
 const express = require('express');
+const { Unauthorized, NotFound, InternalServerError } = require('http-errors');
 const {
   getContacts,
   getContactById,
@@ -11,95 +12,166 @@ const {
   addContactSchema,
   updadeContactSchema,
   changeFavoriteSchema,
-} = require('../../schemas/contactsJoiSchemas');
-const { HttpError } = require('../../helpers/HttpError');
+} = require('../../schemas/contacts/contactsJoiSchemas');
+const { auth } = require('../../middlewares');
 
-const router = express.Router();
+const contactsRouter = express.Router();
 
-router.get('/', async (req, res, next) => {
-  const contacts = await getContacts();
-  res.json({ contacts });
-});
-
-router.get('/:contactId', async (req, res, next) => {
-  const { contactId } = req.params;
+contactsRouter.get('/', async (req, res, next) => {
+  const { limit = 20, page = 1, favorite = false } = req.query;
+  const skip = (page - 1) * limit;
   try {
-    const contact = await getContactById(contactId);
-    console.log('contact', contact);
-    res.json(contact);
-  } catch (error) {
-    const httpError = new HttpError(
-      404,
-      `Contact with id:'${contactId}' not found`
-    );
+    const authCheck = await auth(req);
+    req.user = authCheck;
 
-    next(httpError);
+    if (
+      authCheck === 'token type is not valid' ||
+      authCheck === 'no token provided' ||
+      authCheck === 'jwt expired'
+    ) {
+      throw Unauthorized(authCheck);
+    }
+    const contacts = await getContacts(req.user.id, limit, skip, favorite);
+    res.json({ contacts });
+  } catch (error) {
+    next(error);
   }
 });
 
-router.post('/', async (req, res, next) => {
+contactsRouter.get('/:contactId', async (req, res, next) => {
+  const { contactId } = req.params;
+  try {
+    const authCheck = await auth(req);
+    req.user = authCheck;
+
+    if (
+      authCheck === 'token type is not valid' ||
+      authCheck === 'no token provided' ||
+      authCheck === 'jwt expired'
+    ) {
+      throw Unauthorized(authCheck);
+    }
+    const contact = await getContactById(contactId, req.user.id);
+    if (!contact) {
+      throw NotFound(`Contact with id:'${contactId}' not found`);
+    }
+
+    res.json(contact);
+  } catch (error) {
+    next(error);
+  }
+});
+
+contactsRouter.post('/', async (req, res, next) => {
   const { error } = addContactSchema.validate(req.body);
 
   if (error?.message) {
-    return res.status(400).json({ message: error.message });
+    return res.status(400).json({ message: authCheck });
   }
-  const newContact = await addContact(req.body);
-  res.status(201).json(newContact);
+  try {
+    const authCheck = await auth(req);
+    req.user = authCheck;
+
+    if (
+      authCheck === 'token type is not valid' ||
+      authCheck === 'no token provided' ||
+      authCheck === 'jwt expired'
+    ) {
+      throw Unauthorized(authCheck);
+    }
+
+    const { _id, name, email, phone, favorite } = await addContact(
+      req.body,
+      req.user._id
+    );
+    res.status(201).json({ id: _id, name, email, phone, favorite });
+  } catch (error) {
+    next(error);
+  }
 });
 
-router.delete('/:contactId', async (req, res, next) => {
+contactsRouter.delete('/:contactId', async (req, res, next) => {
   const { contactId } = req.params;
 
   try {
-    await removeContact(contactId);
+    const authCheck = await auth(req);
+    req.user = authCheck;
+
+    if (
+      authCheck === 'token type is not valid' ||
+      authCheck === 'no token provided' ||
+      authCheck === 'jwt expired'
+    ) {
+      throw Unauthorized(authCheck);
+    }
+
+    const remove = await removeContact(contactId);
+    if (!remove) {
+      throw NotFound(`Contact with id ${contactId} not found`);
+    }
+
     res.json({ message: 'Contact deleted' });
   } catch (error) {
-    const httpError = new HttpError(
-      404,
-      `Contact with id:'${contactId}' not found`
-    );
-    next(httpError);
+    next(error);
   }
 });
 
-router.put('/:contactId', async (req, res, next) => {
+contactsRouter.put('/:contactId', async (req, res, next) => {
   const { body, params } = req;
 
   const { error } = updadeContactSchema.validate(body);
 
   if (error?.message) {
-    return res.status(400).json({ message: error.message });
+    return res.status(400).json({ message: authCheck });
   }
   try {
-    const result = await updateContact(params.contactId, body);
-    res.json(result);
-  } catch (error) {
-    const httpError = new HttpError(
-      404,
-      `Contact with id:'${params.contactId}' not found`
-    );
+    const authCheck = await auth(req);
+    req.user = authCheck;
 
-    next(httpError);
+    if (
+      authCheck === 'token type is not valid' ||
+      authCheck === 'no token provided' ||
+      authCheck === 'jwt expired'
+    ) {
+      throw Unauthorized(authCheck);
+    }
+    const result = await updateContact(params.contactId, body, req.user._id);
+    if (!result) {
+      throw NotFound(`Contact with id:'${params.contactId}' not found`);
+    }
+    const { _id, name, email, phone, favorite } = result;
+    res.json({ id: _id, name, email, phone, favorite });
+  } catch (error) {
+    next(error);
   }
 });
 
-router.patch('/:contactId/favorite', async (req, res, next) => {
+contactsRouter.patch('/:contactId/favorite', async (req, res, next) => {
   const { body, params } = req;
   const { error } = changeFavoriteSchema.validate(body);
   if (error?.message) {
-    return res.status(400).json({ message: error.message });
+    return res.status(400).json({ message: authCheck });
   }
   try {
-    const result = await updateStatusContact(params.contactId, body);
-    res.status(200).json(result);
-  } catch (error) {
-    const httpError = new HttpError(
-      404,
-      `Contact with id:'${params.contactId}' not found`
-    );
+    const authCheck = await auth(req);
+    req.user = authCheck;
 
-    next(httpError);
+    if (
+      authCheck === 'token type is not valid' ||
+      authCheck === 'no token provided' ||
+      authCheck === 'jwt expired'
+    ) {
+      throw Unauthorized(authCheck);
+    }
+    const result = await updateStatusContact(params.contactId, body);
+    if (!result) {
+      throw NotFound(`Contact with id:'${params.contactId}' not found`);
+    }
+    const { _id, name, email, phone, favorite } = result;
+    res.status(200).json({ id: _id, name, email, phone, favorite });
+  } catch (error) {
+    next(error);
   }
 });
 
-module.exports = router;
+module.exports = { contactsRouter };
