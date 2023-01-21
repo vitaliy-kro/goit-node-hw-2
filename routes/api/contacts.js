@@ -1,5 +1,5 @@
 const express = require('express');
-const { Unauthorized, NotFound, InternalServerError } = require('http-errors');
+const { Unauthorized, NotFound } = require('http-errors');
 const {
   getContacts,
   getContactById,
@@ -66,7 +66,7 @@ contactsRouter.post('/', async (req, res, next) => {
   const { error } = addContactSchema.validate(req.body);
 
   if (error?.message) {
-    return res.status(400).json({ message: authCheck });
+    return res.status(400).json({ message: error.message });
   }
   try {
     const authCheck = await auth(req);
@@ -122,7 +122,7 @@ contactsRouter.put('/:contactId', async (req, res, next) => {
   const { error } = updadeContactSchema.validate(body);
 
   if (error?.message) {
-    return res.status(400).json({ message: authCheck });
+    return res.status(400).json({ message: error.message });
   }
   try {
     const authCheck = await auth(req);
@@ -150,7 +150,7 @@ contactsRouter.patch('/:contactId/favorite', async (req, res, next) => {
   const { body, params } = req;
   const { error } = changeFavoriteSchema.validate(body);
   if (error?.message) {
-    return res.status(400).json({ message: authCheck });
+    return res.status(400).json({ message: error.message });
   }
   try {
     const authCheck = await auth(req);
