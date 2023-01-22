@@ -1,10 +1,28 @@
 const { Contact } = require('../schemas/contacts/contactsMongooseSchemas');
 
 const getContacts = async (id, limit, skip, favorite) => {
-  const userContacts = await Contact.find({ owner: id, favorite }, { owner: 0 })
+  if (favorite === 'true' || favorite === 'false') {
+    const userContacts = await Contact.find(
+      {
+        owner: id,
+        favorite,
+      },
+      { owner: 0 }
+    )
+      .skip(skip)
+      .limit(limit);
+
+    return userContacts;
+  }
+
+  const userContacts = await Contact.find(
+    {
+      owner: id,
+    },
+    { owner: 0 }
+  )
     .skip(skip)
     .limit(limit);
-  console.log('userContacts', userContacts);
   return userContacts;
 };
 

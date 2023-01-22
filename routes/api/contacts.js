@@ -18,7 +18,7 @@ const { auth } = require('../../middlewares');
 const contactsRouter = express.Router();
 
 contactsRouter.get('/', async (req, res, next) => {
-  const { limit = 20, page = 1, favorite = false } = req.query;
+  const { limit = 20, page = 1, favorite = null } = req.query;
   const skip = (page - 1) * limit;
   try {
     const authCheck = await auth(req);
