@@ -22,12 +22,12 @@ const updadeContactSchema = Joi.object({
   phone: JoiNumberValidation.string().phoneNumber(),
 }).min(1);
 
-const changeFavoriteSchema = Joi.object({
+const updateFavoriteSchema = Joi.object({
   favorite: Joi.boolean().required(),
 });
 
 module.exports = {
   addContactSchema,
   updadeContactSchema,
-  changeFavoriteSchema,
+  updateFavoriteSchema,
 };
