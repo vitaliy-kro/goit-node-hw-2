@@ -124,7 +124,7 @@ const updateAvatar = async (req, res, next) => {
         return img.resize(250, 250).write(publicPath);
       })
       .catch(err => {
-        throw new Error(err.message);
+        throw new BadRequest(err.message);
       });
 
     const user = await User.findByIdAndUpdate(
