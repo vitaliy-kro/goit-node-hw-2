@@ -1,6 +1,9 @@
 const { User } = require('../schemas/user/userMongooseSchema');
 const jwt = require('jsonwebtoken');
 const bcrypt = require('bcrypt');
+const gravatar = require('gravatar');
+const Jimp = require('jimp');
+const path = require('path');
 const { Conflict, Unauthorized, BadRequest } = require('http-errors');
 const {
   authSchema,
@@ -16,20 +19,21 @@ const register = async (req, res, next) => {
     return res.status(400).json({ message: error.message });
   }
   const { email, password } = req.body;
-  console.log('email', email);
 
   try {
     const salt = await bcrypt.genSalt();
     const hashedPassword = await bcrypt.hash(password, salt);
 
-    const { subscription } = await User.create({
+    const { subscription, avatarURL } = await User.create({
       email,
       password: hashedPassword,
+      avatarURL: gravatar.url(email, { protocol: 'http', s: '250' }),
     });
-    res.status(201).json({ user: { email, subscription } });
+
+    res.status(201).json({ user: { email, subscription, avatarURL } });
   } catch (error) {
     if (error.code === 11000) {
-      next(Conflict('User with this email already exists!'));
+      next(new Conflict('User with this email already exists!'));
     }
     next(error);
   }
@@ -57,7 +61,7 @@ const login = async (req, res, next) => {
 
     const token = jwt.sign(payload, JWT_SECRET, { expiresIn: '1h' });
 
-    res.json({
+    return res.json({
       token,
       user: {
         email: storedUser.email,
@@ -66,6 +70,7 @@ const login = async (req, res, next) => {
     });
   } catch (error) {
     next(error);
+    return error;
   }
 };
 
@@ -107,10 +112,39 @@ const subscriptionUpdate = async (req, res, next) => {
   }
 };
 
+const updateAvatar = async (req, res, next) => {
+  const { filename } = req.file;
+
+  const tmpPath = path.resolve(__dirname, '../tmp', filename);
+  const publicPath = path.resolve(__dirname, '../public/avatars', filename);
+
+  try {
+    await Jimp.read(tmpPath)
+      .then(img => {
+        return img.resize(250, 250).write(publicPath);
+      })
+      .catch(err => {
+        throw new Error(err.message);
+      });
+
+    const user = await User.findByIdAndUpdate(
+      req.user.id,
+      {
+        avatarURL: `/api/avatars/${filename} `,
+      },
+      { new: true }
+    );
+    res.json({ data: { avatarURL: user.avatarURL } });
+  } catch (error) {
+    next(error);
+  }
+};
+
 module.exports = {
   register,
   login,
   logout,
   currentUser,
   subscriptionUpdate,
+  updateAvatar,
 };

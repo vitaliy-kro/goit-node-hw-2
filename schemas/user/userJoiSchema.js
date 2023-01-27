@@ -8,6 +8,7 @@ const authSchema = Joi.object({
 const subscriptionUpdateSchema = Joi.object({
   subscription: Joi.string().required().valid('starter', 'pro', 'business'),
 });
+
 module.exports = {
   authSchema,
   subscriptionUpdateSchema,
