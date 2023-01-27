@@ -1,15 +1,14 @@
 const express = require('express');
-const { Conflict, Unauthorized } = require('http-errors');
-const jwt = require('jsonwebtoken');
+
 const {
   register,
   login,
   logout,
   currentUser,
   subscriptionUpdate,
+  updateAvatar,
 } = require('../../controllers/auth.controller');
-const { tryCatchWrapper } = require('../../helpers');
-const { auth } = require('../../middlewares');
+const { auth, upload } = require('../../middlewares');
 
 const authRouter = express.Router();
 
@@ -21,5 +20,7 @@ authRouter.post('/login', login);
 authRouter.post('/logout', auth, logout);
 
 authRouter.get('/current', auth, currentUser);
+
+authRouter.patch('/avatars', auth, upload.single('avatar'), updateAvatar);
 
 module.exports = { authRouter };

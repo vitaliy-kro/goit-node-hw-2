@@ -1,6 +1,8 @@
 const jwt = require('jsonwebtoken');
 const { User } = require('../schemas/user/userMongooseSchema');
 const { Unauthorized, NotFound } = require('http-errors');
+const multer = require('multer');
+const path = require('path');
 
 const { JWT_SECRET } = process.env;
 
@@ -36,6 +38,20 @@ const auth = async (req, res, next) => {
   }
 };
 
+const storage = multer.diskStorage({
+  destination: function (req, file, cb) {
+    cb(null, path.resolve(__dirname, '../tmp'));
+  },
+  filename: function (req, file, cb) {
+    cb(null, req.user.id + file.originalname);
+  },
+});
+
+const upload = multer({
+  storage,
+});
+
 module.exports = {
   auth,
+  upload,
 };
