@@ -1,6 +1,6 @@
 const jwt = require('jsonwebtoken');
 const { User } = require('../schemas/user/userMongooseSchema');
-const { Unauthorized, NotFound } = require('http-errors');
+const { Unauthorized, NotFound } = require('../helpers/errors');
 const multer = require('multer');
 const path = require('path');
 

@@ -18,6 +18,13 @@ const schema = mongoose.Schema(
     },
     avatarURL: String,
     token: String,
+    verify: {
+      type: Boolean,
+      default: false,
+    },
+    verificationToken: {
+      type: String,
+    },
   },
   {
     versionKey: false,

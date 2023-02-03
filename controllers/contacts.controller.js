@@ -1,4 +1,4 @@
-const { NotFound, BadRequest } = require('http-errors');
+const { NotFound, BadRequest } = require('../helpers/errors');
 const {
   addContactSchema,
   updadeContactSchema,

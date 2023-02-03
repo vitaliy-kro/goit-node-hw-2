@@ -9,7 +9,11 @@ const subscriptionUpdateSchema = Joi.object({
   subscription: Joi.string().required().valid('starter', 'pro', 'business'),
 });
 
+const resendValidationSchema = Joi.object({
+  email: Joi.string().required(),
+});
 module.exports = {
   authSchema,
   subscriptionUpdateSchema,
+  resendValidationSchema,
 };

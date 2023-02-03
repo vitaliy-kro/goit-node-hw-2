@@ -2,15 +2,25 @@ const { User } = require('../schemas/user/userMongooseSchema');
 const jwt = require('jsonwebtoken');
 const bcrypt = require('bcrypt');
 const gravatar = require('gravatar');
+const { nanoid } = require('nanoid');
 const Jimp = require('jimp');
 const path = require('path');
-const { Conflict, Unauthorized, BadRequest } = require('http-errors');
+const sgMail = require('@sendgrid/mail');
+
+const {
+  BadRequest,
+  Unauthorized,
+  NotFound,
+  Conflict,
+} = require('../helpers/errors');
 const {
   authSchema,
   subscriptionUpdateSchema,
+  resendValidationSchema,
 } = require('../schemas/user/userJoiSchema');
 
-const { JWT_SECRET } = process.env;
+const { JWT_SECRET, SENDGRID_API_KEY, SENDGRID_EMAIL } = process.env;
+sgMail.setApiKey(SENDGRID_API_KEY);
 
 const register = async (req, res, next) => {
   const { error } = authSchema.validate(req.body);
@@ -21,6 +31,7 @@ const register = async (req, res, next) => {
   const { email, password } = req.body;
 
   try {
+    const verificationToken = nanoid();
     const salt = await bcrypt.genSalt();
     const hashedPassword = await bcrypt.hash(password, salt);
 
@@ -28,7 +39,18 @@ const register = async (req, res, next) => {
       email,
       password: hashedPassword,
       avatarURL: gravatar.url(email, { protocol: 'http', s: '250' }),
+      verificationToken,
     });
+
+    const msg = {
+      to: email,
+      from: SENDGRID_EMAIL,
+      subject: 'Please, confirm your email',
+      text: `Please, confirm your email by link http://localhost:3000/api/users/verify/${verificationToken} `,
+      html: `<b>Please, confirm your email by <a href="http://localhost:3000/api/users/verify/${verificationToken}">link</a> </b>`,
+    };
+
+    await sgMail.send(msg);
 
     res.status(201).json({ user: { email, subscription, avatarURL } });
   } catch (error) {
@@ -48,8 +70,14 @@ const login = async (req, res, next) => {
   const { email, password } = req.body;
   try {
     const storedUser = await User.findOne({ email });
+
     if (!storedUser) {
       throw new BadRequest(`User with email ${email} not found`);
+    }
+    if (!storedUser.verify) {
+      throw new Unauthorized(
+        'Email is not verified! Please check your mail box.'
+      );
     }
 
     const isPasswordValid = await bcrypt.compare(password, storedUser.password);
@@ -140,6 +168,58 @@ const updateAvatar = async (req, res, next) => {
   }
 };
 
+const verifyEmail = async (req, res, next) => {
+  const { verificationToken } = req.params;
+
+  try {
+    const user = await User.findOne({ verificationToken });
+
+    if (!user) {
+      throw new NotFound('User not found');
+    }
+    user.verificationToken = null;
+    user.verify = true;
+    user.save();
+
+    return res.json({ message: 'Verification successful' });
+  } catch (error) {
+    next(error);
+  }
+};
+
+const resendEmail = async (req, res, next) => {
+  const { error } = resendValidationSchema.validate(req.body);
+  if (error?.message) {
+    return res.status(400).json({ message: error.message });
+  }
+
+  const { email } = req.body;
+  try {
+    const user = await User.findOne({ email });
+
+    if (!user) {
+      throw new NotFound('User not found');
+    }
+
+    if (user.verify) {
+      throw new BadRequest('Verification has already been passed');
+    }
+    const msg = {
+      to: email,
+      from: SENDGRID_EMAIL,
+      subject: 'Please, confirm your email',
+      text: `Please, confirm your email by link http://localhost:3000/api/users/verify/${user.verificationToken} `,
+      html: `<b>Please, confirm your email by <a href="http://localhost:3000/api/users/verify/${user.verificationToken}">link</a> </b>`,
+    };
+
+    await sgMail.send(msg);
+
+    return res.json({ message: 'Verification email sent' });
+  } catch (error) {
+    next(error);
+  }
+};
+
 module.exports = {
   register,
   login,
@@ -147,4 +227,6 @@ module.exports = {
   currentUser,
   subscriptionUpdate,
   updateAvatar,
+  verifyEmail,
+  resendEmail,
 };
