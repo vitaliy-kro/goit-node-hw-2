@@ -4,7 +4,6 @@ const schema = mongoose.Schema(
   {
       name: {
           type: String,
-          required: [true, "Name is required"]
       },
     password: {
       type: String,

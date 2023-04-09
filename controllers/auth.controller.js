@@ -15,7 +15,7 @@ const {
 } = require('../helpers/errors');
 const {
   registerSchema,
-    loginSchema,
+  loginSchema,
   subscriptionUpdateSchema,
   resendValidationSchema,
 } = require('../schemas/user/userJoiSchema');
@@ -95,6 +95,8 @@ const login = async (req, res, next) => {
       token,
       user: {
         email: storedUser.email,
+        name: storedUser.name,
+        avatar: storedUser.avatarURL,
         subscription: storedUser.subscription,
       },
     });
