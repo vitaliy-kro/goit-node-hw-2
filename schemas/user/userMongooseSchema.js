@@ -2,6 +2,10 @@ const mongoose = require('mongoose');
 
 const schema = mongoose.Schema(
   {
+      name: {
+          type: String,
+          required: [true, "Name is required"]
+      },
     password: {
       type: String,
       required: [true, 'Set password for user'],

@@ -5,14 +5,14 @@ const app = require('./app');
 
 mongoose.set('strictQuery', false);
 
-const { HOST_URI } = process.env;
+const { HOST_URI, PORT } = process.env;
 
 async function server() {
   try {
     await mongoose.connect(HOST_URI);
     console.log('Database connection successful');
 
-    app.listen(3000, () => {
+    app.listen(PORT || 3000, () => {
       console.log('Server running. Use our API on port: 3000');
     });
   } catch (error) {

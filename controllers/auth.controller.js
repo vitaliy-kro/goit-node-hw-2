@@ -14,7 +14,8 @@ const {
   Conflict,
 } = require('../helpers/errors');
 const {
-  authSchema,
+  registerSchema,
+    loginSchema,
   subscriptionUpdateSchema,
   resendValidationSchema,
 } = require('../schemas/user/userJoiSchema');
@@ -23,12 +24,12 @@ const { JWT_SECRET, SENDGRID_API_KEY, SENDGRID_EMAIL } = process.env;
 sgMail.setApiKey(SENDGRID_API_KEY);
 
 const register = async (req, res, next) => {
-  const { error } = authSchema.validate(req.body);
+  const { error } = registerSchema.validate(req.body);
 
   if (error?.message) {
     return res.status(400).json({ message: error.message });
   }
-  const { email, password } = req.body;
+  const { email, password,name } = req.body;
 
   try {
     const verificationToken = nanoid();
@@ -38,6 +39,7 @@ const register = async (req, res, next) => {
     const { subscription, avatarURL } = await User.create({
       email,
       password: hashedPassword,
+      name,
       avatarURL: gravatar.url(email, { protocol: 'http', s: '250' }),
       verificationToken,
     });
@@ -52,7 +54,7 @@ const register = async (req, res, next) => {
 
     await sgMail.send(msg);
 
-    res.status(201).json({ user: { email, subscription, avatarURL } });
+    res.status(201).json({ user: { name, email, subscription, avatarURL } });
   } catch (error) {
     if (error.code === 11000) {
       next(new Conflict('User with this email already exists!'));
@@ -62,7 +64,7 @@ const register = async (req, res, next) => {
 };
 
 const login = async (req, res, next) => {
-  const { error } = authSchema.validate(req.body);
+  const { error } = loginSchema.validate(req.body);
 
   if (error?.message) {
     return res.status(400).json({ message: error.message });

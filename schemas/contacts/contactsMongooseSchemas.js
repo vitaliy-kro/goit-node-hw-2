@@ -26,6 +26,9 @@ const schema = mongoose.Schema(
   }
 );
 
+schema.virtual('id').get(function() {
+    return this._id.toString();
+});
 const Contact = mongoose.model('contact', schema);
 
 module.exports = {
