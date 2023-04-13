@@ -71,7 +71,7 @@ const addContact = async (req, res, next) => {
             ...req.body,
             owner: req.user.id,
         });
-        res.status(201).json({id: _id, name, email, phone, favorite});
+        res.status(201).json({ _id, name, email, phone, favorite});
     } catch (error) {
         next(error);
     }
@@ -82,12 +82,12 @@ const deleteContact = async (req, res, next) => {
 
     try {
         const remove = await Contact.findByIdAndRemove(contactId);
+        console.log(remove);
 
         if (!remove) {
             throw new NotFound(`Contact with id ${contactId} not found`);
         }
-
-        res.json({message: 'Contact deleted'});
+        res.json({_id: remove._id});
     } catch (error) {
         if (error.name === 'CastError') {
             next(

@@ -2,7 +2,10 @@ const Joi = require('joi');
 const JoiNumberValidation = Joi.extend(require('joi-phone-number'));
 
 const addContactSchema = Joi.object({
-  name: Joi.string().alphanum().min(3).max(30).required(),
+  name: Joi.string().regex(/^[a-zA-Z0-9]+(?: [a-zA-Z0-9]+)?$/).min(3).max(30).required().messages({
+    'string.pattern.base': 'Name should contain only letters and numbers, with an optional space in between',
+    'any.required': 'Name is required',
+  }),
   email: Joi.string()
     .email({
       minDomainSegments: 2,

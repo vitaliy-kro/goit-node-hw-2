@@ -54,7 +54,7 @@ const register = async (req, res, next) => {
 
     await sgMail.send(msg);
 
-    res.status(201).json({ user: { name, email, subscription, avatarURL } });
+    res.status(201).json({ user: { name, email, subscription, avatar: avatarURL } });
   } catch (error) {
     if (error.code === 11000) {
       next(new Conflict('User with this email already exists!'));
@@ -118,8 +118,8 @@ const logout = async (req, res, next) => {
 
 const currentUser = async (req, res, next) => {
   try {
-    const { email, subscription } = req.user;
-    res.json({ email, subscription });
+    const { email, subscription, avatarURL, name } = req.user;
+    res.json({ email, subscription, avatar: avatarURL, name });
   } catch (error) {
     next(error);
   }
@@ -166,7 +166,7 @@ const updateAvatar = async (req, res, next) => {
       },
       { new: true }
     );
-    res.json({ data: { avatarURL: user.avatarURL } });
+    res.json( { avatar: user.avatarURL } );
   } catch (error) {
     next(error);
   }
