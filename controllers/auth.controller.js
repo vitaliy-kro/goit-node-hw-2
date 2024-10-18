@@ -3,6 +3,7 @@ const jwt = require('jsonwebtoken');
 const bcrypt = require('bcrypt');
 const gravatar = require('gravatar');
 const Jimp = require('jimp');
+const { v2: cloudinary } = require('cloudinary');
 const path = require('path');
 const { Conflict, Unauthorized, BadRequest } = require('http-errors');
 const {
@@ -86,8 +87,9 @@ const logout = async (req, res, next) => {
 
 const currentUser = async (req, res, next) => {
   try {
-    const { email, subscription } = req.user;
-    res.json({ email, subscription });
+    const { email, subscription, avatarURL } = req.user;
+
+    res.json({ email, subscription, avatarURL });
   } catch (error) {
     next(error);
   }
@@ -113,24 +115,24 @@ const subscriptionUpdate = async (req, res, next) => {
 };
 
 const updateAvatar = async (req, res, next) => {
-  const { filename } = req.file;
+  const { upload_image_url } = req.body;
 
-  const tmpPath = path.resolve(__dirname, '../tmp', filename);
-  const publicPath = path.resolve(__dirname, '../public/avatars', filename);
+  // const tmpPath = path.resolve(__dirname, '../tmp', filename);
+  // const publicPath = path.resolve(__dirname, '../public/avatars', filename);
 
   try {
-    await Jimp.read(tmpPath)
-      .then(img => {
-        return img.resize(250, 250).write(publicPath);
-      })
-      .catch(err => {
-        throw new BadRequest(err.message);
-      });
+    // await Jimp.read(tmpPath)
+    //   .then(img => {
+    //     return img.resize(250, 250).write(publicPath);
+    //   })
+    //   .catch(err => {
+    //     throw new BadRequest(err.message);
+    //   });
 
     const user = await User.findByIdAndUpdate(
       req.user.id,
       {
-        avatarURL: `/api/avatars/${filename} `,
+        avatarURL: upload_image_url,
       },
       { new: true }
     );

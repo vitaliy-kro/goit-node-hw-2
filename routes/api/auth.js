@@ -8,7 +8,7 @@ const {
   subscriptionUpdate,
   updateAvatar,
 } = require('../../controllers/auth.controller');
-const { auth, upload } = require('../../middlewares');
+const { auth, upload, uploadImageToCloudinary } = require('../../middlewares');
 
 const authRouter = express.Router();
 
@@ -21,6 +21,12 @@ authRouter.post('/logout', auth, logout);
 
 authRouter.get('/current', auth, currentUser);
 
-authRouter.patch('/avatars', auth, upload.single('avatar'), updateAvatar);
+authRouter.patch(
+  '/avatars',
+  auth,
+  upload.single('avatar'),
+  uploadImageToCloudinary,
+  updateAvatar
+);
 
 module.exports = { authRouter };

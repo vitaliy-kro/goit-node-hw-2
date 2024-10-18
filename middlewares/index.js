@@ -3,6 +3,7 @@ const { User } = require('../schemas/user/userMongooseSchema');
 const { Unauthorized, NotFound } = require('http-errors');
 const multer = require('multer');
 const path = require('path');
+const { uploadImageToCloudinary } = require('./uploadImageToCloudinary');
 
 const { JWT_SECRET } = process.env;
 
@@ -25,6 +26,8 @@ const auth = async (req, res, next) => {
       throw new NotFound(`user with id: ${id} not found`);
     }
 
+    console.log(user);
+
     req.user = user;
     next();
   } catch (error) {
@@ -38,14 +41,16 @@ const auth = async (req, res, next) => {
   }
 };
 
-const storage = multer.diskStorage({
-  destination: function (req, file, cb) {
-    cb(null, path.resolve(__dirname, '../tmp'));
-  },
-  filename: function (req, file, cb) {
-    cb(null, req.user.id + file.originalname);
-  },
-});
+const storage = multer.memoryStorage();
+
+// const storage = multer.diskStorage({
+//   destination: function (req, file, cb) {
+//     cb(null, path.resolve(__dirname, '../tmp'));
+//   },
+//   filename: function (req, file, cb) {
+//     cb(null, req.user.id + file.originalname);
+//   },
+// });
 
 const upload = multer({
   storage,
@@ -54,4 +59,5 @@ const upload = multer({
 module.exports = {
   auth,
   upload,
+  uploadImageToCloudinary,
 };
